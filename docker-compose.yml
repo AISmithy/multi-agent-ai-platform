@@ -1,0 +1,51 @@
+version: "3.9"
+
+services:
+  redis:
+    image: redis:7-alpine
+    ports: ["6379:6379"]
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+
+  rabbitmq:
+    image: rabbitmq:3.12-management-alpine
+    ports:
+      - "5672:5672"
+      - "15672:15672"   # Management UI
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    volumes:
+      - rabbit_data:/var/lib/rabbitmq
+
+  postgres:
+    image: postgres:15-alpine
+    ports: ["5432:5432"]
+    environment:
+      POSTGRES_DB: kyc_db
+      POSTGRES_USER: kyc_app_user
+      POSTGRES_PASSWORD: password
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      - ./migrations:/docker-entrypoint-initdb.d
+
+  api:
+    build: .
+    command: uvicorn api.webhook_handler:app --host 0.0.0.0 --port 8000 --reload
+    ports: ["8000:8000"]
+    env_file: .env
+    depends_on: [redis, rabbitmq, postgres]
+
+  worker:
+    build: .
+    command: python -m workers.agent_worker
+    env_file: .env
+    depends_on: [redis, rabbitmq, postgres]
+    deploy:
+      replicas: 3   # Scale workers horizontally
+
+volumes:
+  redis_data:
+  rabbit_data:
+  pg_data:
