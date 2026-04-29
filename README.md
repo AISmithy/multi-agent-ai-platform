@@ -1,4 +1,4 @@
-# KYC Multi-Agent Platform
+# Multi-Agent Platform
 
 Hub-and-spoke multi-agent system for automated KYC onboarding. Orchestrates document validation, identity verification, sanctions screening, risk scoring, and compliance decisions via Claude-powered agents and RabbitMQ.
 
